@@ -45,7 +45,7 @@ class Replica(Process):
         if isinstance(self.decisions[self.slot_in-WINDOW],ReconfigCommand):
           r,a,l = self.decisions[self.slot_in-WINDOW].config.split(';')
           self.config = Config(r.split(','),a.split(','),l.split(','))
-          print self.id, ": new config:", self.config
+          print(self.id, ": new config:", self.config)
       if self.slot_in not in self.decisions:
         cmd = self.requests.pop(0)
         self.proposals[self.slot_in] = cmd
@@ -61,11 +61,11 @@ class Replica(Process):
     if isinstance(cmd, ReconfigCommand):
       self.slot_out += 1
       return
-    print self.id, ": perform",self.slot_out, ":", cmd
+    print(self.id, ": perform",self.slot_out, ":", cmd)
     self.slot_out += 1
 
   def body(self):
-    print "Here I am: ", self.id
+    print("Here I am: ", self.id)
     while True:
       msg = self.getNextMessage()
       if isinstance(msg, RequestMessage):
@@ -79,7 +79,7 @@ class Replica(Process):
             del self.proposals[self.slot_out]
           self.perform(self.decisions[self.slot_out])
       else:
-        print "Replica: unknown msg type"
+        print("Replica: unknown msg type")
       self.propose()
 </code></pre>      
 
@@ -103,7 +103,7 @@ class Acceptor(Process):
     self.env.addProc(self)
 
   def body(self):
-    print "Here I am: ", self.id
+    print("Here I am: ", self.id)
     while True:
       msg = self.getNextMessage()
       if isinstance(msg, P1aMessage):
@@ -164,7 +164,7 @@ class Scout(Process):
                                             msg.ballot_number))
           return
       else:
-        print "Scout: unexpected msg"
+        print("Scout: unexpected msg")
 </code></pre>
 
 # Commander
@@ -231,7 +231,7 @@ class Leader(Process):
     self.env.addProc(self)
 
   def body(self):
-    print "Here I am: ", self.id
+    print("Here I am: ", self.id)
     Scout(self.env, "scout:%s:%s" % (str(self.id), str(self.ballot_number)),
           self.id, self.config.acceptors, self.ballot_number)
     while True:
@@ -272,7 +272,7 @@ class Leader(Process):
                 self.id, self.config.acceptors, self.ballot_number)
         self.active = False
       else:
-        print "Leader: unknown msg type"
+        print("Leader: unknown msg type")
 </code></pre>        
 
 # Environment
@@ -391,7 +391,7 @@ class Process(Thread):
       self.body()
       self.env.removeProc(self.id)
     except EOFError:
-      print "Exiting.."
+      print("Exiting..")
 
   def getNextMessage(self):
     return self.inbox.get()
