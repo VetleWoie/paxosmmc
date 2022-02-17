@@ -4,7 +4,7 @@ from threading import Thread
 import pickle
 import requests
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-import time
+
 class Handler(BaseHTTPRequestHandler):
     def do_POST(self):
         #Get size from path
