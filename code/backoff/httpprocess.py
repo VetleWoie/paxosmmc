@@ -12,12 +12,12 @@ class Handler(BaseHTTPRequestHandler):
         
         #Read pickled message
         msg=self.rfile.read(size)
-        # try:
-        #     #Depickle message
-        #     msg = pickle.loads(msg)
-        # except pickle.PickleError:
-        #     self.send_response(400)
-        #     return
+        try:
+            #Depickle message
+            msg = pickle.loads(msg)
+        except pickle.PickleError:
+            self.send_response(400)
+            return
     
         self.send_response(200)
         self.send_header("Content-type", "text/html")
