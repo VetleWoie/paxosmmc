@@ -40,6 +40,7 @@ class Process(ThreadingHTTPServer):
         self.inbox = multiprocessing.Manager().Queue()
         self.id = id
         self.thread.start()
+        self.serve_forever()
 
     def run(self):
         try:
@@ -71,5 +72,6 @@ class Process(ThreadingHTTPServer):
 
 if __name__ == "__main__":
     HOST, PORT = "127.0.0.1", 5555
-    with Process((HOST, PORT), Handler, 2, 1) as server:
-        server.serve_forever()
+    Process((HOST, PORT), Handler, 2, 1)
+    # with Process((HOST, PORT), Handler, 2, 1) as server:
+        # server.serve_forever()
