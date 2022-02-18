@@ -34,11 +34,10 @@ class Process(ThreadingHTTPServer):
     A process is a http server with a queue of incoming messages, and an
     "environment" that keeps track of all processes and queues.
     """
-    def __init__(self,server_address, handler_class, env, id):
+    def __init__(self,server_address, handler_class, id):
         super().__init__(server_address, handler_class)
         self.thread = Thread(target=self.run)
         self.inbox = multiprocessing.Manager().Queue()
-        self.env = env
         self.id = id
         self.thread.start()
 
