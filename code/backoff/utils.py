@@ -1,4 +1,5 @@
 from collections import namedtuple
+import json
 import unittest
 
 WINDOW = 5               # Number of slots that can have proposals pending
@@ -59,13 +60,38 @@ class Config(namedtuple('Config',['replicas','acceptors','leaders'])):
     A configuration consists of a list of replicas, a list of
     acceptors and a list of leaders.
     """
+    @classmethod
+    def from_jsonfile(cls,filename):
+      """
+      Class method to create file from jsonfile
+      """
+      with open(filename, "r") as json_file:
+        data = json.load(json_file)
+      return cls(data["replicas"], data["acceptors"], data["leaders"])
+
     __slots__ = ()
     def __str__(self):
         return "%s;%s;%s" % (','.join(self.replicas),
                              ','.join(self.acceptors),
                              ','.join(self.leaders))
 
+class test_config(unittest.TestCase):
+  def setUp(self) -> None:
+    self.correct = Config(["localhost:5000", "localhost:5001"],
+                          ["localhost:5004", "localhost:5005", "localhost:5006"],
+                          ["localhost:5002", "localhost:5003"])
+    config_string = '{"replicas": ["localhost:5000", "localhost:5001"],"leaders": ["localhost:5002", "localhost:5003"],"acceptors": ["localhost:5004", "localhost:5005", "localhost:5006"]}'
+    with open("/tmp/testfile.json","w") as file:
+      file.write(config_string)
 
+  def test_create_from_jsonfile(self):
+    c = Config.from_jsonfile("/tmp/testfile.json")
+    for replica1, replica2 in zip(c.replicas,self.correct.replicas):
+      self.assertEqual(replica1, replica2)
+    for acceptor1, acceptor2 in zip(c.acceptors,self.correct.acceptors):
+      self.assertEqual(acceptor1, acceptor2)
+    for leader1, leader2 in zip(c.leaders,self.correct.leaders):
+      self.assertEqual(leader1, leader2)
 
 class test_ballot_number(unittest.TestCase):
   def setUp(self):
