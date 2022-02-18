@@ -6,6 +6,9 @@ import requests
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 class Handler(BaseHTTPRequestHandler):
+    """
+    Handler for a Process to get new messages
+    """
     def do_POST(self):
         #Get size from path
         size = int(self.path.split("/")[-1])
