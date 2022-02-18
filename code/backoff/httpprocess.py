@@ -58,7 +58,7 @@ class Process(ThreadingHTTPServer):
         msg: Message object
         """
         pickled_msg = pickle.dumps(msg)
-        requests.post(dst+f"/{len(pickled_msg)}", data=pickled_msg)
+        requests.post("http://"+dst+f"/{len(pickled_msg)}", data=pickled_msg)
         # self.env.sendMessage(dst, msg)
 
 
