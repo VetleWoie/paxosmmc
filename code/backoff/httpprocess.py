@@ -28,7 +28,7 @@ class Handler(BaseHTTPRequestHandler):
 
 class Process(ThreadingHTTPServer):
     """
-    A process is a request handler with a queue of incoming messages, and an
+    A process is a http server with a queue of incoming messages, and an
     "environment" that keeps track of all processes and queues.
     """
     def __init__(self,server_address, handler_class, env, id):
