@@ -1,17 +1,17 @@
-from process import Process
+# from process import Process
+from httpprocess import Process, Handler
 from message import ProposeMessage,DecisionMessage,RequestMessage
 from utils import *
 import time
 
 class Replica(Process):
-    def __init__(self, env, id, config):
-        Process.__init__(self, env, id)
+    def __init__(self,server_address, handler_class, id, config):
         self.slot_in = self.slot_out = 1
         self.proposals = {}
         self.decisions = {}
         self.requests = []
         self.config = config
-        self.env.addProc(self)
+        Process.__init__(self,server_address, handler_class, id)
 
     def propose(self):
         """
@@ -41,6 +41,7 @@ class Replica(Process):
                 cmd = self.requests.pop(0)
                 self.proposals[self.slot_in] = cmd
                 for ldr in self.config.leaders:
+                    print("Sending to: ", ldr)
                     self.sendMessage(ldr, ProposeMessage(self.id, self.slot_in, cmd))
             self.slot_in +=1
 
@@ -102,3 +103,15 @@ class Replica(Process):
             else:
                 print("Replica: unknown msg type")
             self.propose()
+
+
+if __name__=="__main__":
+    import sys
+    if len(sys.argv) < 3:
+        print(f"Usage: {sys.argv[0]} [adress] [configfile]")
+        exit(0)
+    adress = sys.argv[1].split(':')
+    config = Config.from_jsonfile(sys.argv[2])
+    with Replica((adress[0], int(adress[1])), Handler, sys.argv[1], config) as r: 
+        print("Starting replica server")
+        r.serve_forever()
