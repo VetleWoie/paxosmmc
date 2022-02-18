@@ -112,6 +112,9 @@ if __name__=="__main__":
         exit(0)
     adress = sys.argv[1].split(':')
     config = Config.from_jsonfile(sys.argv[2])
-    with Replica((adress[0], int(adress[1])), Handler, sys.argv[1], config) as r: 
-        print("Starting replica server")
-        r.serve_forever()
+    #Start replica server
+    Replica((adress[0], int(adress[1])), Handler, sys.argv[1], config)
+
+    # with Replica((adress[0], int(adress[1])), Handler, sys.argv[1], config) as r: 
+        # print("Starting replica server")
+        # r.serve_forever()
