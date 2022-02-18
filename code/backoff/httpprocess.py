@@ -36,10 +36,11 @@ class Process(ThreadingHTTPServer):
     """
     def __init__(self,server_address, handler_class, env, id):
         super().__init__(server_address, handler_class)
-
+        self.thread = Thread(target=self.run)
         self.inbox = multiprocessing.Manager().Queue()
         self.env = env
         self.id = id
+        self.thread.start()
 
     def run(self):
         try:
@@ -72,6 +73,4 @@ class Process(ThreadingHTTPServer):
 if __name__ == "__main__":
     HOST, PORT = "127.0.0.1", 5555
     with Process((HOST, PORT), Handler, 2, 1) as server:
-        t2 = Thread(target=server.run)
-        t2.start()
         server.serve_forever()
