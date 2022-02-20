@@ -45,7 +45,6 @@ class Process(ThreadingHTTPServer):
     def run(self):
         try:
             self.body()
-            self.env.removeProc(self.id)
         except EOFError:
             print("Exiting..")
 
