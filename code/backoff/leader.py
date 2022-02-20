@@ -1,5 +1,8 @@
 from utils import *
-from process import Process
+# from process import Process
+import threading
+import multiprocessing
+from httpprocess import Process, Handler
 from commander import Commander
 from scout import Scout
 from message import ProposeMessage, AdoptedMessage, PreemptedMessage
@@ -16,14 +19,34 @@ class Leader(Process):
     time, there is at most one entry per slot number in the set.
     - timeout: time in seconds the leader waits between operations
     """
-    def __init__(self, env, id, config):
-        Process.__init__(self, env, id)
+    def __init__(self, server_address, handler_class, id, config, available_ports):
         self.ballot_number = BallotNumber(0, self.id)
         self.active = False
         self.proposals = {}
         self.timeout = 1.0
         self.config = config
-        self.env.addProc(self)
+        self.threads = []
+        #Keep track of what ports can be opened for scouts and commanders
+        self.available_ports = multiprocessing.Manager().Queue()
+        for port in range(available_ports[0], available_ports[1]):
+            self.available_ports.put(port)
+        Process.__init__(self, server_address, handler_class, id)
+    
+    def new_scout(self):
+        """
+        Find available port and spawn a new scout as a new thread.
+        """
+        port = self.available_ports.get()
+        thread = threading.Thread(target=Scout,
+                args=[((self.server_address[0], port), 
+                        Handler, 
+                        self.server_address+str(port), 
+                        self.id,
+                        self.config.acceptors, 
+                        self.ballot_number, 
+                        self.available_ports)])
+        self.threads.append(thread)
+        thread.start()
 
     def body(self):
         """
@@ -47,8 +70,8 @@ class Leader(Process):
         possible to use the current ballot number to choose a command.
         """
         print("Here I am: ", self.id)
-        Scout(self.env, "scout:%s:%s" % (str(self.id), str(self.ballot_number)),
-                    self.id, self.config.acceptors, self.ballot_number)
+        #Create new scout
+        self.new_scout()
         while True:
             msg = self.getNextMessage()
             if isinstance(msg, ProposeMessage):
@@ -95,10 +118,8 @@ class Leader(Process):
                     self.active = False
                     self.ballot_number = BallotNumber(msg.ballot_number.round+1,
                                                       self.id)
-                    Scout(self.env, "scout:%s:%s" % (str(self.id),
-                                                     str(self.ballot_number)),
-                          self.id, self.config.acceptors, self.ballot_number)
-
+                    #Spawn new scout
+                    self.new_scout()
             else:
                 print("Leader: unknown msg type")
             sleep(self.timeout)
