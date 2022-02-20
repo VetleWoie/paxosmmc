@@ -1,4 +1,5 @@
-from process import Process
+# from process import Process
+from httpprocess import Process
 from message import P1aMessage, P1bMessage, PreemptedMessage, AdoptedMessage
 
 class Scout(Process):
@@ -6,12 +7,16 @@ class Scout(Process):
     The scout runs what is known as phase 1 of the Synod protocol.
     Every scout is created for a specific ballot number.
     """
-    def __init__(self, env, id, leader, acceptors, ballot_number):
-        Process.__init__(self, env, id)
+    def __init__(self, server_address, handler_class, id, leader, acceptors, ballot_number, port_handler):
         self.leader = leader
         self.acceptors = acceptors
         self.ballot_number = ballot_number
-        self.env.addProc(self)
+        self.port_handler = port_handler
+        Process.__init__(self, server_address, handler_class, id)
+
+    def shutdown(self) -> None:
+        super().shutdown()
+        self.port_handler.put(self.server_address[1])
 
     def body(self):
         """
@@ -51,12 +56,26 @@ class Scout(Process):
                                          AdoptedMessage(self.id,
                                                         self.ballot_number,
                                                         pvalues))
-                        return
+                        return self.shutdown()
                 else:
                     self.sendMessage(self.leader,
                                      PreemptedMessage(self.id,
                                                       msg.ballot_number))
-                    return
+                    return self.shutdown()
             else:
                 print("Scout: unexpected msg")
 
+if __name__ == "__main__":
+    import multiprocessing
+    from httpprocess import Handler
+    import sys
+    if len(sys.argv) < 3:
+        print(f"Usage: {sys.argv[0]} [adress] [configfile]")
+        exit(0)
+
+    adress = sys.argv[1].split(':')
+    port_handler = multiprocessing.Manager().Queue()
+    scout = Scout((adress[0], int(adress[1])), Handler, sys.argv[1], None, None, None,port_handler)
+    port = port_handler.get()
+    print(port)
+    
