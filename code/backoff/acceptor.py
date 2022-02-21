@@ -1,5 +1,6 @@
 from utils import PValue
-from process import Process
+# from process import Process
+from httpprocess import Process, Handler
 from message import P1aMessage,P1bMessage,P2aMessage,P2bMessage
 
 class Acceptor(Process):
@@ -10,11 +11,10 @@ class Acceptor(Process):
     - ballot_number: a ballot number, initially None.
     - accepted: a set of pvalues, initially empty.
     """
-    def __init__(self, env, id):
-        Process.__init__(self, env, id)
+    def __init__(self, server_address, handler_class, id):
         self.ballot_number = None
         self.accepted = set()
-        self.env.addProc(self)
+        Process.__init__(self, server_address, handler_class, id)
 
     def body(self):
         """
@@ -45,3 +45,12 @@ class Acceptor(Process):
                 if msg.ballot_number == self.ballot_number:
                     self.accepted.add(PValue(msg.ballot_number,msg.slot_number,msg.command))
                 self.sendMessage(msg.src, P2bMessage(self.id, self.ballot_number, msg.slot_number))
+
+if __name__ == "__main__":
+    import sys
+    if len(sys.argv) < 2:
+        print(f"Usage: {sys.argv[0]} [adress]")
+        exit(0)
+    adress = sys.argv[1].split(':')
+    #Start acceptor server
+    Acceptor((adress[0], int(adress[1])), Handler, sys.argv[1])
