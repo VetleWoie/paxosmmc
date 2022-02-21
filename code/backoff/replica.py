@@ -109,7 +109,6 @@ class Replica_handler(Handler):
     def do_GET(self):
         decisions = self.server.decisions
         response = json.dumps(decisions, indent=4)
-        print(response)
         self.send_response(200)
         self.send_header("Content-type", "text/html")
         self.end_headers()
