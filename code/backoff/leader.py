@@ -20,6 +20,7 @@ class Leader(Process):
     - timeout: time in seconds the leader waits between operations
     """
     def __init__(self, server_address, handler_class, id, config, available_ports):
+        self.id = id
         self.ballot_number = BallotNumber(0, self.id)
         self.active = False
         self.proposals = {}
@@ -36,15 +37,37 @@ class Leader(Process):
         """
         Find available port and spawn a new scout as a new thread.
         """
+        print("Spawning new scout")
         port = self.available_ports.get()
         thread = threading.Thread(target=Scout,
-                args=[((self.server_address[0], port), 
+                args=[(self.server_address[0], port), 
                         Handler, 
-                        self.server_address+str(port), 
+                        self.server_address[0]+":"+str(port), 
                         self.id,
                         self.config.acceptors, 
                         self.ballot_number, 
-                        self.available_ports)])
+                        self.available_ports])
+        self.threads.append(thread)
+        thread.start()
+
+    def new_commander(self, slot_number, command):
+        """
+        Find available port and spawn a new scout as a new thread.
+        """
+        print("Spawning new commander")
+        port = self.available_ports.get()
+        thread = threading.Thread(target=Commander,
+                args=[(self.server_address[0], port), 
+                        Handler, 
+                        self.server_address[0]+":"+str(port), 
+                        self.id,
+                        self.config.acceptors,
+                        self.config.replicas,
+                        self.ballot_number,
+                        slot_number,
+                        command,
+                        self.available_ports
+                        ])
         self.threads.append(thread)
         thread.start()
 
@@ -78,11 +101,12 @@ class Leader(Process):
                 if msg.slot_number not in self.proposals:
                     self.proposals[msg.slot_number] = msg.command
                     if self.active:
-                        Commander(self.env,"commander:%s:%s:%s" % (str(self.id),
-                                                                   str(self.ballot_number),
-                                                                   str(msg.slot_number)),
-                                  self.id, self.config.acceptors, self.config.replicas,
-                                  self.ballot_number, msg.slot_number, msg.command)
+                        self.new_commander(msg.slot_number, msg.command)
+                        # Commander(self.env,"commander:%s:%s:%s" % (str(self.id),
+                        #                                            str(self.ballot_number),
+                        #                                            str(msg.slot_number)),
+                        #           self.id, self.config.acceptors, self.config.replicas,
+                        #           self.ballot_number, msg.slot_number, msg.command)
             elif isinstance(msg, AdoptedMessage):
                 # Decrease timeout since the leader does not seem to
                 # be competing with another leader.
@@ -101,12 +125,13 @@ class Leader(Process):
                     # Start a commander (i.e. run Phase 2) for every
                     # proposal (from the beginning)
                     for sn in self.proposals:
-                        Commander(self.env,
-                                  "commander:%s:%s:%s" % (str(self.id),
-                                                          str(self.ballot_number),
-                                                          str(sn)),
-                                  self.id, self.config.acceptors, self.config.replicas,
-                                  self.ballot_number, sn, self.proposals.get(sn))
+                        self.new_commander(sn, self.proposals.get(sn))
+                        # Commander(self.env,
+                        #           "commander:%s:%s:%s" % (str(self.id),
+                        #                                   str(self.ballot_number),
+                        #                                   str(sn)),
+                        #           self.id, self.config.acceptors, self.config.replicas,
+                        #           self.ballot_number, sn, self.proposals.get(sn))
                     self.active = True
             elif isinstance(msg, PreemptedMessage):
                 # The leader is competing with another leader
@@ -123,3 +148,18 @@ class Leader(Process):
             else:
                 print("Leader: unknown msg type")
             sleep(self.timeout)
+
+if __name__ == "__main__":
+    import sys
+    if len(sys.argv) < 3:
+        print(f"Usage: {sys.argv[0]} [adress] [configfile]")
+        exit(0)
+    adress = sys.argv[1].split(':')
+    config = Config.from_jsonfile(sys.argv[2])
+    Leader((adress[0], int(adress[1])), Handler, sys.argv[1],config,(6000,6010))
+    #Start replica server
+    # Replica((adress[0], int(adress[1])), Handler, sys.argv[1], config)
+
+    # with Replica((adress[0], int(adress[1])), Handler, sys.argv[1], config) as r: 
+        # print("Starting replica server")
+        # r.serve_forever()
