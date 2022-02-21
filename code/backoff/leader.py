@@ -151,15 +151,11 @@ class Leader(Process):
 
 if __name__ == "__main__":
     import sys
-    if len(sys.argv) < 3:
-        print(f"Usage: {sys.argv[0]} [adress] [configfile]")
+    if len(sys.argv) < 5:
+        print(f"Usage: {sys.argv[0]} [adress] [configfile] [start of available ports] [end of available ports]")
         exit(0)
     adress = sys.argv[1].split(':')
     config = Config.from_jsonfile(sys.argv[2])
-    Leader((adress[0], int(adress[1])), Handler, sys.argv[1],config,(6000,6010))
-    #Start replica server
-    # Replica((adress[0], int(adress[1])), Handler, sys.argv[1], config)
-
-    # with Replica((adress[0], int(adress[1])), Handler, sys.argv[1], config) as r: 
-        # print("Starting replica server")
-        # r.serve_forever()
+    port_start = int(sys.argv[3])
+    port_end = int(sys.argv[4])
+    Leader((adress[0], int(adress[1])), Handler, sys.argv[1],config,(port_start,port_end))
