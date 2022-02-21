@@ -2,6 +2,7 @@
 from httpprocess import Process, Handler
 from message import ProposeMessage,DecisionMessage,RequestMessage
 from utils import *
+import json
 import time
 
 class Replica(Process):
@@ -104,6 +105,15 @@ class Replica(Process):
                 print("Replica: unknown msg type")
             self.propose()
 
+class Replica_handler(Handler):
+    def do_GET(self):
+        decisions = self.server.decisions
+        response = json.dumps(decisions, indent=4)
+        print(response)
+        self.send_response(200)
+        self.send_header("Content-type", "text/html")
+        self.end_headers()
+        self.wfile.write(response.encode())
 
 if __name__=="__main__":
     import sys
@@ -113,7 +123,7 @@ if __name__=="__main__":
     adress = sys.argv[1].split(':')
     config = Config.from_jsonfile(sys.argv[2])
     #Start replica server
-    Replica((adress[0], int(adress[1])), Handler, sys.argv[1], config)
+    Replica((adress[0], int(adress[1])), Replica_handler, sys.argv[1], config)
 
     # with Replica((adress[0], int(adress[1])), Handler, sys.argv[1], config) as r: 
         # print("Starting replica server")
