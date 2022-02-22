@@ -72,7 +72,8 @@ def run_on_cluster(port=64209,
                     num_acceptor=None, 
                     fault_tolerance=None,
                     path_to_folder="/home/vho023/3203/paxosmmc/code/backoff", 
-                    config_file=CONFIG_FILE):
+                    config_file=CONFIG_FILE,
+                    continous_run=True):
     #User has the ability to either choose level of fault tolerance or number of replicas, leaders and acceptors directly.
     if fault_tolerance is not None:
         #From Paxos made moderatly complex paper.
@@ -96,9 +97,8 @@ def run_on_cluster(port=64209,
     #Leader servers has to be started last as they will immedialy assume there exists some acceptors to scout
     for leader in config_dict["leaders"]:
         procs.append(execute_leader(leader,available_ports, config_file, path_to_folder))
-
     #Loop until shutdown
-    while True:
+    while continous_run:
         pass
 
 def kill_cluster(signal,frame):
@@ -139,7 +139,7 @@ if __name__=="__main__":
 
     args = parser.parse_args()
     signal.signal(signal.SIGINT, kill_cluster)
-    CONFIG_FILE = "./test.json"
+    CONFIG_FILE = args.config_file
 
     
     run_on_cluster(fault_tolerance=args.fault_tolerance,
