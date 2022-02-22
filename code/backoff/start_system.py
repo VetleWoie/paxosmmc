@@ -4,7 +4,7 @@ import json
 from subprocess import Popen, PIPE
 from utils import Config
 import time
-CONFIG_FILE = "/tmp/paxosconfig.json"
+CONFIG_FILE = "./paxosconfig.json"
 USER = "vho023"
 
 def findNodes(numNodes):
@@ -51,19 +51,19 @@ def execute_replica(adress, config_file, path):
     node = adress.split(':')[0]
     command = ['ssh', node, f'cd {path}; python3.10 replica.py {adress} {config_file}']
     print(f"Running replica at: {adress}")
-    return Popen(command, stdin=PIPE, stdout=PIPE)#, stderr=PIPE)
+    return Popen(command, stdin=PIPE, stdout=PIPE, stderr=PIPE)
 
 def execute_acceptor(adress, path):
     node = adress.split(':')[0]
     command = ['ssh', node, f'cd {path}; python3.10 acceptor.py {adress}']
     print(f"Running acceptor at: {adress}")
-    return Popen(command,)#stdin=PIPE, stdout=PIPE)#, stderr=PIPE)
+    return Popen(command,stdin=PIPE, stdout=PIPE, stderr=PIPE)
 
 def execute_leader(adress, available_ports, config_file, path):
     node = adress.split(':')[0]
     command = ['ssh', node, f'cd {path}; python3.10 leader.py {adress} {config_file} {available_ports[0]} {available_ports[1]}']
     print(f"Running leader at: {adress}")
-    return Popen(command, stdin=PIPE, stdout=PIPE)#, stderr=PIPE)
+    return Popen(command, stdin=PIPE, stdout=PIPE, stderr=PIPE)
 
 def run_on_cluster(port=64209,
                     available_ports=(64210,64310),
@@ -122,9 +122,31 @@ def kill_cluster(signal,frame):
     exit(0)
 
 if __name__=="__main__":
+    import argparse
+
+    #Setup argparser:
+    parser = argparse.ArgumentParser(description="Startup script for Paxos system on UiT's cluster")
+    parser.add_argument('-f', '--fault_tolerance', type=int, help="Automaticly choose number of replicas, acceptors and leaders based on needed fault tolerance")
+    parser.add_argument('-c', '--config_file', type=str, default=CONFIG_FILE, help="Path to file where start script stores configuration needed for paxos servers")
+    parser.add_argument('--folder', type=str, default="/home/vho023/3203/paxosmmc/code/backoff", help="Path to where on cluster the folder with executable is")
+    parser.add_argument('-r', '--replicas', type=int, default=None,help="Number of replicas needed, will overwrite fault tolerance")
+    parser.add_argument('-l', '--leaders', type=int, default=None,help="Number of leaders needed, will overwrite fault tolerance")
+    parser.add_argument('-a', '--acceptors', type=int, default=None,help="Number of acceptors needed, will overwrite fault tolerance")
+    parser.add_argument('-p', '--port', type=int, default=64209, help="Port hvere all paxos instance servers will be running")
+    parser.add_argument('-pr', '--port_range', type=tuple, default=(64210,64310), help="Port range where leaders can spawn new scouts and commanders")
+    parser.add_argument('--user',type=str, default='vho023', help="User which is running this paxos instance, used when shutting down processes")
+
+
+    args = parser.parse_args()
     signal.signal(signal.SIGINT, kill_cluster)
     CONFIG_FILE = "./test.json"
-    
-    run_on_cluster(fault_tolerance=1, config_file="./test.json")
 
-        
+    
+    run_on_cluster(fault_tolerance=args.fault_tolerance,
+                     config_file=args.config_file,
+                     port=args.port,
+                     available_ports=args.port_range,
+                     num_replica=args.replicas,
+                     num_acceptor=args.acceptors,
+                     num_leader=args.leaders,
+                     path_to_folder=args.folder)
