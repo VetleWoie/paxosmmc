@@ -51,15 +51,23 @@ class Process(ThreadingHTTPServer):
     def getNextMessage(self):
         return self.inbox.get()
 
-    
-    def sendMessage(self, dst, msg):
+    def thread_send_message(self, dst, msg):
         """
         dst: Destination of message, as endpoint
         msg: Message object
         """
         pickled_msg = pickle.dumps(msg)
         requests.post("http://"+dst+f"/{len(pickled_msg)}", data=pickled_msg)
-        # self.env.sendMessage(dst, msg)
+
+    def sendMessage(self, dst, msg):
+        """
+        dst: Destination of message, as endpoint
+        msg: Message object
+        """
+        send_thread = Thread(target=self.thread_send_message, args=[dst, msg])
+        send_thread.start()
+        # pickled_msg = pickle.dumps(msg)
+        # requests.post("http://"+dst+f"/{len(pickled_msg)}", data=pickled_msg)
 
 
     def deliver(self, msg):
