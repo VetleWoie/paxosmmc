@@ -72,15 +72,16 @@ def run_requests(num_requests,config):
 
 
 def test_throughput(start, stop, step, num_requests=10):
-    sleeptime = 20
-    config = Config.from_jsonfile(CONFIG_FILE)
-    with open("throughput.csv",'w') as file:
+    sleeptime = 30
+
+    with open("throughput_request.csv",'a') as file:
         file.write(f"fault_tolerance, time_{num_requests}\n")
         for fault_tolerance in range(start, stop, step):
             print()
             print(f"Running benchmark with fault tolerance: {fault_tolerance}")
             #Start paxos instance with specified fault tolerance
             execute_paxos(fault_tolerance)
+            config = Config.from_jsonfile(CONFIG_FILE)
             print(f"Sleeping for {sleeptime} seconds to let it boot up")
             time.sleep(sleeptime)
             runtime = run_requests(num_requests, config)
@@ -129,27 +130,17 @@ def kill_cluster(signal,frame):
 
 if __name__=="__main__":
     signal.signal(signal.SIGINT, kill_cluster)
-    # #Setup argparser:
-    # parser = argparse.ArgumentParser(description="Benchmark script for Paxos")
-    # parser.add_argument('-f', '--fault_tolerance', type=int, help="Automaticly choose number of replicas, acceptors and leaders based on needed fault tolerance")
-    # parser.add_argument('-c', '--config_file', type=str, default=CONFIG_FILE, help="Path to file where start script stores configuration needed for paxos servers")
-    # parser.add_argument('--folder', type=str, default="/home/vho023/3203/paxosmmc/code/backoff", help="Path to where on cluster the folder with executable is")
-    # parser.add_argument('-r', '--replicas', type=int, default=None,help="Number of replicas needed, will overwrite fault tolerance")
-    # parser.add_argument('-l', '--leaders', type=int, default=None,help="Number of leaders needed, will overwrite fault tolerance")
-    # parser.add_argument('-a', '--acceptors', type=int, default=None,help="Number of acceptors needed, will overwrite fault tolerance")
-    # parser.add_argument('-p', '--port', type=int, default=64209, help="Port hvere all paxos instance servers will be running")
-    # parser.add_argument('-pr', '--port_range', type=tuple, default=(64210,64310), help="Port range where leaders can spawn new scouts and commanders")
-    # parser.add_argument('--user',type=str, default='vho023', help="User which is running this paxos instance, used when shutting down processes")
-    # pass
-    # test_throughput(1,10,1,3)
-    # config = Config.from_jsonfile(CONFIG_FILE)
-    # run_requests(5, config)
-    # make_request_to_replica(config.replicas[1], 1)
-    # check_replicas(config, 1)
-    # for i in range(10):
-        # make_request_to_replica()
-    test_throughput(1,39,1, num_requests=20)
-    # p = execute_paxos(1)
-    # while p.poll():
-    #     pass
-    # kill_cluster(0,0)
+    #Setup argparser:
+    parser = argparse.ArgumentParser(description="Benchmark script for Paxos")
+
+    parser.add_argument('-fs', '--fault_tolerance_start', type=int,default=1, help="Start number of fault tolerance for benchmark")
+    parser.add_argument('-fe', '--fault_tolerance_end', type=int,default=39, help="End number of fault tolerance for benchmark")
+
+    parser.add_argument('-rs', '--requests_start', type=int,default=10, help="Start number of requests")
+    parser.add_argument('-re', '--requests_end', type=int,default=110, help="End number of requests")
+    parser.add_argument('-rstep', '--requests_step_size', type=int,default=10, help="Step increase for number of requests")
+
+    args = parser.parse_args()
+    print(args)
+    for i in range(args.fault_tolerance_start,args.fault_tolerance_end,10):
+        test_throughput(args.requests_start,args.requests_end,args.requests_step_size, num_requests=i)
